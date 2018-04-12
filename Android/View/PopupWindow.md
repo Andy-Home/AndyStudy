@@ -281,5 +281,23 @@ PopupWindow高度时，那么PopupWindow会显示在附着View的上方，如果
 做这个功能的就是 *updateAboveAnchor(boolean aboveAnchor) 、invokePopup(WindowManager.LayoutParams p)* 两个方法。
 
 ### 开发过程中的深坑
-&emsp;&emsp;
-坑：showAsDropDown添加的View如果在未绘制之前依附，会有深坑
+&emsp;&emsp; 1、需求：当点击屏幕时，在对应位置呈现出一个指示View，并且在指示View下弹出
+PopupWindow。此时实现的方式是调用 *showAsDropDown* 方法，并且将指示View传入。注意：View
+传入的时候，View并没有绘制完成。呈现的效果就是 PopupWindow一直显示在指示View对应父View
+的左上角，也就是(0,0)位置。
+
+&emsp;&emsp;分析：通过上述表述，可以清晰的知道，重点是在传入的View，由于传入的View并没
+有绘制完成，父View也没有通过 Layout 确认指示View的位置，所以其实传入的View作为依附View
+此时是不可靠的，那么PopupWindow会显示在(0,0)位置就显而易见了。
+
+&emsp;&emsp;解决方式：伪代码
+```java
+View.getViewTreeObserver().addOnGlobalLayoutListener(
+        new ViewTreeObserver.OnGlobalLayoutListener() {
+    @Override
+    public void onGlobalLayout() {
+        PopupWindow.showAsDropDown(View);
+    }
+});
+```
+&emsp;&emsp;上面的伪代码中，View是PopupWindow将要依附的View
